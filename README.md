@@ -1,10 +1,11 @@
-![build](https://github.com/cla-assistant/github-action/workflows/build/badge.svg)
-
+![build](https://github.com/luojiyin1987/github-action/workflows/build/badge.svg)
 
 > [!IMPORTANT]
-> **This repository is no longer actively maintained.** I no longer have the bandwidth to maintain this project. The repository has been archived and is now read-only. 
+> **This is a fork of [contributor-assistant/github-action](https://github.com/contributor-assistant/github-action).**
 >
-> You are welcome to **fork this repository** and continue development independently. All existing releases remain functional. Thank you to all contributors and users for your support over the years.
+> The upstream repository was **archived on March 23, 2026** and is no longer actively maintained. This fork was created for learning purposes and to fix broken GitHub Actions workflows.
+>
+> **Status of this fork**: Not actively maintained beyond workflow fixes. You are welcome to fork this repository and continue development independently.
 
 # Handling CLAs and DCOs via GitHub Action
 
@@ -44,7 +45,7 @@ jobs:
     steps:
       - name: "CLA Assistant"
         if: (github.event.comment.body == 'recheck' || github.event.comment.body == 'I have read the CLA Document and I hereby sign the CLA') || github.event_name == 'pull_request_target'
-        uses: contributor-assistant/github-action@v2.6.1
+        uses: luojiyin1987/github-action@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # the below token should have repo scope and must be manually added by you in the repository's secret
@@ -52,7 +53,7 @@ jobs:
           # PERSONAL_ACCESS_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         with:
           path-to-signatures: 'signatures/version1/cla.json'
-          path-to-document: 'https://github.com/cla-assistant/github-action/blob/master/SAPCLA.md' # e.g. a CLA or a DCO document
+          path-to-document: 'https://github.com/luojiyin1987/github-action/blob/master/SAPCLA.md' # e.g. a CLA or a DCO document
           # branch should not be protected
           branch: 'main'
           allowlist: user1,bot*
