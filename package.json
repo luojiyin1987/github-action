@@ -18,9 +18,12 @@
     "setup"
   ],
   "dependencies": {
-    "@actions/core": "^1.11.1",
-    "@actions/github": "^6.0.1",
+    "@actions/core": "1.11.1",
+    "@actions/github": "6.0.1",
     "lodash": "^4.17.21"
+  },
+  "overrides": {
+    "undici": "^6.24.0"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
