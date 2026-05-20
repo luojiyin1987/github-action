@@ -1,108 +1,78 @@
-import * as core from '@actions/core'
-import * as github from '@actions/github'
 import { context } from '@actions/github'
-import { getclas } from '../src/checkcla'
-import { lockPullRequest } from '../src/pullRequestLock'
 import { run } from '../src/main'
-import { mocked } from 'ts-jest/utils'
+import { setupClaCheck } from '../src/setupClaCheck'
+import { lockPullRequest } from '../src/pullrequest/pullRequestLock'
+import { lockPullRequestAfterMerge } from '../src/shared/getInputs'
 
-jest.mock('@actions/core')
-jest.mock('@actions/github')
-jest.mock('../src/pullRequestLock')
-jest.mock('../src/checkcla')
-const mockedGetClas = mocked(getclas)
-const mockedLockPullRequest = mocked(lockPullRequest)
+jest.mock('@actions/core', () => ({
+  info: jest.fn(),
+  setFailed: jest.fn()
+}))
 
-
-describe('Pull request event', () => {
-
-  beforeEach(async () => {
-    // @ts-ignore
-    github.context = {
-      eventName: 'pull_request',
-      ref: 'refs/pull/232/merge',
-      workflow: 'CLA Assistant',
-      action: 'ibakshaygithub-action-1',
-      actor: 'ibakshay',
-      payload: {
-        action: 'closed',
-        number: '1',
-        pull_request: {
-          number: 1,
-          title: 'test',
-          user: {
-            login: 'ibakshay',
-          },
-        },
-        repository: {
-          name: 'auto-assign',
-          owner: {
-            login: 'ibakshay',
-          },
-        },
-      },
-      repo: {
-        owner: 'ibakshay',
-        repo: 'auto-assign',
-      },
-      issue: {
-        owner: 'kentaro-m',
-        repo: 'auto-assign',
-        number: 1,
-      },
-      sha: ''
-    }
-
+jest.mock('@actions/github', () => ({
+  context: {
+    payload: {},
+    repo: { owner: 'ibakshay', repo: 'auto-assign' },
+    issue: { owner: 'ibakshay', repo: 'auto-assign', number: 1 },
+    actor: 'ibakshay',
+    eventName: 'pull_request',
+    workflow: 'CLA Assistant'
   }
-  )
+}))
 
-  test('the lockPullRequest  method should be called if there is a pull request merge/closed', async () => {
+jest.mock('../src/setupClaCheck', () => ({
+  setupClaCheck: jest.fn()
+}))
 
+jest.mock('../src/pullrequest/pullRequestLock', () => ({
+  lockPullRequest: jest.fn()
+}))
+
+jest.mock('../src/shared/getInputs', () => ({
+  lockPullRequestAfterMerge: jest.fn()
+}))
+
+const mockedSetupClaCheck = jest.mocked(setupClaCheck)
+const mockedLockPullRequest = jest.mocked(lockPullRequest)
+const mockedLockPullRequestAfterMerge = jest.mocked(lockPullRequestAfterMerge)
+
+describe('run', () => {
+  beforeEach(() => {
+    ;(context as any).payload = { action: 'closed' }
+    mockedLockPullRequestAfterMerge.mockReturnValue('true')
+  })
+
+  test('calls lockPullRequest when a pull request closes and locking is enabled', async () => {
     await run()
+
     expect(mockedLockPullRequest).toHaveBeenCalled()
-
-
+    expect(mockedSetupClaCheck).not.toHaveBeenCalled()
   })
 
-  test('the checkcla  method should not called if there is a pull request merge/closed', async () => {
-
-    await run()
-    expect(mockedGetClas).not.toHaveBeenCalled()
-  })
-
-  test('the lockPullRequest  method should not be called if there is a pull request opened', async () => {
-
-    github.context.payload.action = 'opened'
-    await run()
-
-    expect(mockedLockPullRequest).not.toHaveBeenCalled()
-
-  })
-
-  test('the checkcla  method should  be called if there is a pull request opened', async () => {
-
-    github.context.payload.action = 'opened'
-    await run()
-    expect(mockedGetClas).toHaveBeenCalled()
-
-  })
-
-  test('the lockPullRequest  method should not be called if there is a pull request sync', async () => {
-
-    github.context.payload.action = 'synchronize'
+  test('calls setupClaCheck when a pull request opens', async () => {
+    ;(context as any).payload.action = 'opened'
 
     await run()
 
     expect(mockedLockPullRequest).not.toHaveBeenCalled()
-
+    expect(mockedSetupClaCheck).toHaveBeenCalled()
   })
 
-  test('the checkcla  method should  be called if there is a pull request sync', async () => {
-    github.context.payload.action = 'synchronize'
+  test('calls setupClaCheck when a pull request synchronizes', async () => {
+    ;(context as any).payload.action = 'synchronize'
+
     await run()
-    expect(mockedGetClas).toHaveBeenCalled()
 
+    expect(mockedLockPullRequest).not.toHaveBeenCalled()
+    expect(mockedSetupClaCheck).toHaveBeenCalled()
   })
 
+  test('calls setupClaCheck when a pull request closes and locking is disabled', async () => {
+    mockedLockPullRequestAfterMerge.mockReturnValue('false')
 
+    await run()
+
+    expect(mockedLockPullRequest).not.toHaveBeenCalled()
+    expect(mockedSetupClaCheck).toHaveBeenCalled()
+  })
 })

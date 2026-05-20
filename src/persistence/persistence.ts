@@ -1,16 +1,20 @@
 import { context } from '@actions/github'
 
 import { ReactedCommitterMap } from '../interfaces'
-import { GitHub } from '@actions/github/lib/utils'
 import { getDefaultOctokitClient, getPATOctokit } from '../octokit'
 
 import * as input from '../shared/getInputs'
 
-export async function getFileContent(): Promise<any> {
-  const octokitInstance: InstanceType<typeof GitHub> =
-    isRemoteRepoOrOrgConfigured() ? getPATOctokit() : getDefaultOctokitClient()
+function getOctokitInstance() {
+  return isRemoteRepoOrOrgConfigured()
+    ? getPATOctokit()
+    : getDefaultOctokitClient()
+}
 
-  const result = await octokitInstance.repos.getContent({
+export async function getFileContent(): Promise<any> {
+  const octokitInstance = getOctokitInstance()
+
+  const result = await octokitInstance.rest.repos.getContent({
     owner: input.getRemoteOrgName() || context.repo.owner,
     repo: input.getRemoteRepoName() || context.repo.repo,
     path: input.getPathToSignatures(),
@@ -20,10 +24,9 @@ export async function getFileContent(): Promise<any> {
 }
 
 export async function createFile(contentBinary): Promise<any> {
-  const octokitInstance: InstanceType<typeof GitHub> =
-    isRemoteRepoOrOrgConfigured() ? getPATOctokit() : getDefaultOctokitClient()
+  const octokitInstance = getOctokitInstance()
 
-  return octokitInstance.repos.createOrUpdateFileContents({
+  return octokitInstance.rest.repos.createOrUpdateFileContents({
     owner: input.getRemoteOrgName() || context.repo.owner,
     repo: input.getRemoteRepoName() || context.repo.repo,
     path: input.getPathToSignatures(),
@@ -40,8 +43,7 @@ export async function updateFile(
   claFileContent,
   reactedCommitters: ReactedCommitterMap
 ): Promise<any> {
-  const octokitInstance: InstanceType<typeof GitHub> =
-    isRemoteRepoOrOrgConfigured() ? getPATOctokit() : getDefaultOctokitClient()
+  const octokitInstance = getOctokitInstance()
 
   const pullRequestNo = context.issue.number
   const owner = context.issue.owner
@@ -50,7 +52,7 @@ export async function updateFile(
   claFileContent?.signedContributors.push(...reactedCommitters.newSigned)
   let contentString = JSON.stringify(claFileContent, null, 2)
   let contentBinary = Buffer.from(contentString).toString('base64')
-  await octokitInstance.repos.createOrUpdateFileContents({
+  await octokitInstance.rest.repos.createOrUpdateFileContents({
     owner: input.getRemoteOrgName() || context.repo.owner,
     repo: input.getRemoteRepoName() || context.repo.repo,
     path: input.getPathToSignatures(),

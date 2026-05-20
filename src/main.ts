@@ -24,5 +24,3 @@ export async function run() {
     if (error instanceof Error) core.setFailed(error.message)
   }
 }
-
-run()
